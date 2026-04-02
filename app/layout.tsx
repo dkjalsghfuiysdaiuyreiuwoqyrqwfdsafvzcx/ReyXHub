@@ -1,6 +1,21 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Manrope } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
+import Navbar from "@/components/navbar/Navbar";
+import Footer from "@/components/footer/Footer";
+
+const satoshi = localFont({
+  src: "./fonts/Satoshi-Variable.woff2",
+  variable: "--font-satoshi",
+  display: "swap",
+});
+
+const manrope = Manrope({
+  subsets: ["latin"],
+  variable: "--font-manrope",
+  display: "swap",
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,9 +40,31 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${satoshi.variable} ${manrope.variable} h-full antialiased scroll-smooth`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-screen overflow-x-hidden">
+        <div className="relative min-h-screen">
+          <div
+            className="absolute inset-0 -z-10"
+            style={{
+              background: "white",
+              backgroundImage: `
+                linear-gradient(to right, rgba(71,85,105,0.15) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(71,85,105,0.15) 1px, transparent 1px),
+                radial-gradient(circle at 50% 60%, rgba(236,72,153,0.15) 0%, rgba(168,85,247,0.05) 40%, transparent 70%)
+              `,
+              backgroundSize: "80px 80px, 80px 80px, 100% 100%",
+            }}
+          />
+
+          <Navbar />
+
+          <main className="mx-auto w-full max-w-7xl px-4">
+            {children}
+          </main>
+          <Footer />
+        </div>
+      </body>
     </html>
   );
 }
