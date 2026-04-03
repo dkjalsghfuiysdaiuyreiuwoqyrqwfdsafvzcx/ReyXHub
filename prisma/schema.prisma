@@ -12,6 +12,11 @@ datasource db {
   provider = "postgresql"
 }
 
+enum ROLE {
+  STARTER
+  PREMIUM
+}
+
 model User {
   id             String          @id
   name           String
@@ -20,6 +25,7 @@ model User {
   image          String?
   createdAt      DateTime
   updatedAt      DateTime
+  role           ROLE            @default(STARTER)
   sessions       Session[]
   accounts       Account[]
   playerAccounts PlayerAccount[]
@@ -100,7 +106,7 @@ model Item {
 
   type     ItemType
   name     String
-  quantity Int    @default(1)
+  quantity Int      @default(1)
 
   pet Pet?
 

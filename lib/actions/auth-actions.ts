@@ -3,6 +3,7 @@
 import { headers } from "next/headers"
 import { auth } from "../auth"
 import { cache } from "react"
+import { redirect } from "next/navigation"
 
 
 export async function registerEmail(formData: FormData) {
@@ -19,6 +20,8 @@ export async function registerEmail(formData: FormData) {
         },
         headers: await headers()
     })
+
+    redirect("/hub")
 }
 
 export async function loginEmail(formData: FormData) {
@@ -32,12 +35,16 @@ export async function loginEmail(formData: FormData) {
         },
         headers: await headers()
     })
+
+    redirect("/hub")
 }
 
 export async function logoutEmail() {
     await auth.api.signOut({
         headers: await headers()
     })
+
+    redirect("/")
 }
 
 export const getSession = cache(async () => {

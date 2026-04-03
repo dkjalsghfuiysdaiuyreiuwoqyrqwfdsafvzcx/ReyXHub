@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Manrope } from "next/font/google";
 import localFont from "next/font/local";
-import "../../globals.css";
+import "../globals.css";
 import Footer from "@/components/footer/Footer";
 import HubNavbar from "@/components/navbar/HubNavbar";
 
@@ -16,7 +16,7 @@ export default function HubLayout({
     <div className="min-h-screen overflow-x-hidden">
       <div className="relative min-h-screen">
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 -z-10"
           style={{
             backgroundImage: `
         linear-gradient(45deg, transparent 49%, #e5e7eb 49%, #e5e7eb 51%, transparent 51%),

@@ -32,9 +32,7 @@ export default function HubNavbar() {
                     <img width="30" height="30" src="https://img.icons8.com/color/48/discord-logo.png" alt="discord-logo" />
                 </div>
                 <div className="flex gap-4">
-                    <Link href={"/login"}>
-                        <Button>Logout</Button>
-                    </Link>
+                    <Button variant={"destructive"}>Logout</Button>
                 </div>
             </div>
         </div>
