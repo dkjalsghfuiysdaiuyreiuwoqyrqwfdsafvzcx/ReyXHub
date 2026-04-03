@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { loginEmail } from "@/lib/actions/auth-actions"
-import { logoutEmail } from "@/lib/actions/auth-actions"
 
 export function LoginForm({
   className,
@@ -31,7 +30,7 @@ export function LoginForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form action={logoutEmail}>
+          <form action={loginEmail}>
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>
