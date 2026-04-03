@@ -20,6 +20,7 @@ model User {
   image          String?
   createdAt      DateTime
   updatedAt      DateTime
+  apiKey         ApiKey[]
   sessions       Session[]
   accounts       Account[]
   playerAccounts PlayerAccount[]
@@ -122,6 +123,25 @@ model Pet {
   updatedAt DateTime @updatedAt
 
   @@map("pet")
+}
+
+model ApiKey {
+  id           String   @id @default(cuid())
+  key          String   @unique
+  maxRequests  Int
+  requestsUsed Int      @default(0)
+
+  isActive     Boolean  @default(true)
+
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime?
+
+  lastUsedAt   DateTime?
+
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("api_key")
 }
 
 enum PetVariant {
