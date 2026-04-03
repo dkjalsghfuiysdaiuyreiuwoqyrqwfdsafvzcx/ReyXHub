@@ -80,18 +80,24 @@ model Verification {
   @@map("verification")
 }
 
+enum PLAYERACCOUNT_STATUS {
+  ONLINE
+  OFFLINE
+}
+
 model PlayerAccount {
-  id            String    @id @default(cuid())
+  id            String               @id @default(cuid())
   account       String
   device        String
-  potions       Int       @default(0)
-  bucks         Int       @default(0)
-  eventCurrency Int       @default(0)
-  tickets       Int       @default(0)
+  potions       Int                  @default(0)
+  bucks         Int                  @default(0)
+  eventCurrency Int                  @default(0)
+  tickets       Int                  @default(0)
   lastSeen      DateTime?
   upTime        DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  status        PLAYERACCOUNT_STATUS @default(ONLINE)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
 
   items    Item[]
   user     User?   @relation(fields: [userId], references: [id])

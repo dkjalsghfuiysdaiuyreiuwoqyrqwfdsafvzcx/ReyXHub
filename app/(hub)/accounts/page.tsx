@@ -1,3 +1,6 @@
+import { getAccountsLinked } from "@/lib/actions/accounts/accounts-actions"
+import { getUserApiKey } from "@/lib/actions/api-key"
+import { formatTimeAgo } from "@/lib/format/format-time-ago"
 import {
   Users,
   FlaskConical,
@@ -15,6 +18,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
 } from "lucide-react"
+
 
 const topStats = [
   {
@@ -65,63 +69,6 @@ const statChanges = [
   { title: "Crystal Eggs", value: "+0", color: "text-cyan-600" },
 ]
 
-const accounts = [
-  {
-    name: "AAvaPlayzOfficial47",
-    status: "online",
-    device: "RAPRAP",
-    potions: 81,
-    bucks: "81,204",
-    eventCurrency: "1,920,484",
-    tickets: 0,
-    lastSeen: "39s ago",
-    uptime: "15h 0m",
-  },
-  {
-    name: "Aceavabear64",
-    status: "online",
-    device: "RAPRAP",
-    potions: 174,
-    bucks: "242,155",
-    eventCurrency: "3,102,826",
-    tickets: 0,
-    lastSeen: "19s ago",
-    uptime: "3h 25m",
-  },
-  {
-    name: "AceClanepic",
-    status: "online",
-    device: "RAPRAP",
-    potions: 144,
-    bucks: "210,001",
-    eventCurrency: "2,363,604",
-    tickets: 0,
-    lastSeen: "24s ago",
-    uptime: "11h 52m",
-  },
-  {
-    name: "adoptluckhandler",
-    status: "offline",
-    device: "RAPRAP",
-    potions: 0,
-    bucks: "8,425",
-    eventCurrency: "35,236",
-    tickets: 2000,
-    lastSeen: "1d ago",
-    uptime: "4m 3s",
-  },
-  {
-    name: "AidennnFam77",
-    status: "online",
-    device: "RAPRAP",
-    potions: 189,
-    bucks: "212,034",
-    eventCurrency: "4,417,790",
-    tickets: 0,
-    lastSeen: "34s ago",
-    uptime: "10h 51m",
-  },
-]
 
 function StatCard({
   title,
@@ -137,7 +84,7 @@ function StatCard({
   valueClass: string
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-transparent p-4 shadow-sm">
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -171,7 +118,7 @@ function ChangeCard({
   color: string
 }) {
   return (
-    <div className="rounded-xl border border-slate-200 bg-transparent p-4 shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
         {title}
       </p>
@@ -180,7 +127,25 @@ function ChangeCard({
   )
 }
 
-export default function AccountsPage() {
+export default async function AccountsPage() {
+
+  const apiKey = await getUserApiKey()
+  const accounts = await getAccountsLinked(apiKey[0].id)
+  const accountsWithStatus = accounts.map((account) => {
+    const FIVE_MINUTES = 5 * 60 * 1000;
+
+    let computedStatus = "OFFLINE";
+
+    if (account.lastSeen) {
+      const diff = Date.now() - new Date(account.lastSeen).getTime();
+      computedStatus = diff <= FIVE_MINUTES ? "ONLINE" : "OFFLINE";
+    }
+
+    return {
+      ...account,
+      status: computedStatus,
+    };
+  });
   return (
     <div className="mt-10 space-y-6">
       <div>
@@ -198,7 +163,7 @@ export default function AccountsPage() {
         ))}
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-transparent p-5 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Statistics</h2>
@@ -224,7 +189,7 @@ export default function AccountsPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-transparent p-4 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div className="relative w-full xl:max-w-md">
             <Search
@@ -234,7 +199,7 @@ export default function AccountsPage() {
             <input
               type="text"
               placeholder="Search accounts..."
-              className="h-11 w-full rounded-xl border border-slate-200 bg-transparent pl-10 pr-4 text-sm outline-none transition focus:border-slate-400"
+              className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 text-sm outline-none transition focus:border-slate-400"
             />
           </div>
 
@@ -278,10 +243,10 @@ export default function AccountsPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-transparent p-4 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
-            <select className="h-11 rounded-xl border border-slate-200 bg-transparent px-4 text-sm outline-none">
+            <select className="h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm outline-none">
               <option>100 per page</option>
               <option>50 per page</option>
               <option>25 per page</option>
@@ -307,7 +272,7 @@ export default function AccountsPage() {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-transparent shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
             <thead>
@@ -322,16 +287,15 @@ export default function AccountsPage() {
                 <th className="px-4 py-4">Event Currency</th>
                 <th className="px-4 py-4">Tickets</th>
                 <th className="px-4 py-4">Last Seen</th>
-                <th className="px-4 py-4">Uptime</th>
                 <th className="px-4 py-4">Pets</th>
                 <th className="px-4 py-4">Session</th>
               </tr>
             </thead>
 
             <tbody>
-              {accounts.map((account) => (
+              {accountsWithStatus.map((account) => (
                 <tr
-                  key={account.name}
+                  key={account.account}
                   className="border-b border-slate-100 last:border-b-0"
                 >
                   <td className="px-4 py-4">
@@ -342,13 +306,13 @@ export default function AccountsPage() {
                     <div className="flex items-center gap-3">
                       <span
                         className={`h-2.5 w-2.5 rounded-full ${
-                          account.status === "online"
+                          account.status == "ONLINE"
                             ? "bg-green-500"
                             : "bg-red-500"
                         }`}
                       />
                       <span className="font-medium text-slate-900">
-                        {account.name}
+                        {account.account}
                       </span>
                     </div>
                   </td>
@@ -367,9 +331,8 @@ export default function AccountsPage() {
                     {account.tickets}
                   </td>
                   <td className="px-4 py-4 text-slate-700">
-                    {account.lastSeen}
+                    {formatTimeAgo(account.lastSeen)}
                   </td>
-                  <td className="px-4 py-4 text-slate-700">{account.uptime}</td>
 
                   <td className="px-4 py-4">
                     <button className="rounded-lg border border-sky-200 px-3 py-1.5 text-sm font-medium text-sky-700 hover:border-sky-300">
