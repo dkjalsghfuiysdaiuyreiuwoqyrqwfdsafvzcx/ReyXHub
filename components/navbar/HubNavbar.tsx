@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Button } from "../ui/button";
 
 
-export default function Navbar() {
+export default function HubNavbar() {
     return (
         <div className="sticky top-0 z-50 flex items-center justify-around py-4 px-4 md:px-40 shadow bg-white/70 backdrop-blur">
             <div>
@@ -11,13 +11,19 @@ export default function Navbar() {
             <div>
                 <ul className="hidden md:flex items-center gap-4">
                     <li className="font-bold cursor-pointer">
-                        <a href="#home">Home</a>
+                        <a href="#home">Dashboard</a>
                     </li>
                     <li className="cursor-pointer">
-                        <a href="#pricing">Pricing</a>
+                        <a href="#pricing">Accounts</a>
                     </li>
                     <li className="cursor-pointer">
-                        <a href="#other-games">Other Games</a>
+                        <a href="#other-games">Inventory</a>
+                    </li>
+                    <li className="cursor-pointer">
+                        <a href="#other-games">Scripts</a>
+                    </li>
+                    <li className="cursor-pointer">
+                        <a href="#other-games">Add-ons</a>
                     </li>
                 </ul>
             </div>
@@ -27,10 +33,7 @@ export default function Navbar() {
                 </div>
                 <div className="flex gap-4">
                     <Link href={"/login"}>
-                        <Button>Login</Button>
-                    </Link>
-                    <Link href={"/register"}>
-                        <Button variant={"outline"}>Register</Button>
+                        <Button>Logout</Button>
                     </Link>
                 </div>
             </div>

@@ -2,6 +2,7 @@
 
 import { headers } from "next/headers"
 import { auth } from "../auth"
+import { cache } from "react"
 
 
 export async function registerEmail(formData: FormData) {
@@ -38,3 +39,11 @@ export async function logoutEmail() {
         headers: await headers()
     })
 }
+
+export const getSession = cache(async () => {
+  const result = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  return result
+})
