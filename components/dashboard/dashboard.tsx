@@ -13,7 +13,7 @@ export default async function Dashboard() {
     redirect("/login")
   }
 
-  const apiKey = await getUserApiKey(session.user.id)
+  const apiKey = await getUserApiKey()
   const hasApiKey = apiKey.length > 0
 
   async function handleGenerateApiKey() {
@@ -24,7 +24,7 @@ export default async function Dashboard() {
       redirect("/login")
     }
 
-    const existingKey = await getUserApiKey(session.user.id)
+    const existingKey = await getUserApiKey()
 
     if (existingKey.length === 0) {
       await generateApiKey({

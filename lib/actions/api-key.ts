@@ -10,7 +10,7 @@ type GenerateApiKeyParams = {
 };
 
 
-export async function getUserApiKey(userId: string) {
+export async function getUserApiKey() {
 
     const session = await getSession()
     if (!session) {
@@ -20,7 +20,7 @@ export async function getUserApiKey(userId: string) {
 
     const userApiKey = await prisma.apiKey.findMany({
         where: {
-            userId: userId
+            userId: session.user.id
         }
     })
 
