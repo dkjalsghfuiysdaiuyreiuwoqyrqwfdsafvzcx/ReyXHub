@@ -11,28 +11,36 @@ export default async function Dashboard() {
     redirect("/login")
   }
   const apiKey = await getUserApiKey(session?.user.id)
-  
+
 
   return (
-    <div className="mt-10 bg-[#ffffff]/80 p-4 border border-slate-200 rounded-2xl shadow">
+    <div className="mt-10 bg-[#ffffff]/80 p-4 border border-slate-200 rounded-2xl shadow grid grid-cols-2">
+      <div className="col-span-2">
         <DBTitle
-            title="Dashboard"
-            description="See the statistics of your Farm."
+          title="Dashboard"
+          description="See the statistics of your Farm."
         />
-        
+      </div>
+
+      <div className="col-span-2 md:col-span-2">
         <div className="mt-4 border border-slate-200 p-4 rounded-lg flex items-center gap-2">
-            <h1 className="font-semibold">API Key: {apiKey[0].key}</h1>
-            <Copy size={15}/>
+          <h1 className="font-semibold">API Key: {apiKey[0].key}</h1>
+          <Copy size={15} />
         </div>
+      </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-10">
-            <StatCard title="Time" firstNum={999} secondNum={999} buttonName="Add Time" />
-            <StatCard title="Accounts" firstNum={999} secondNum={999} buttonName="Add Accounts" />
+      <div className="mt-4 grid grid-cols-2 gap-10 col-span-2">
+        <div className="col-span-2 md:col-span-1">
+          <StatCard title="Time" firstNum={999} secondNum={999} buttonName="Add Time" />
         </div>
+        <div className="col-span-2 md:col-span-1">
+          <StatCard title="Accounts" firstNum={999} secondNum={999} buttonName="Add Accounts" />
+        </div>
+      </div>
 
-        <div>
-            
-        </div>
+      <div>
+
+      </div>
     </div>
   )
 }

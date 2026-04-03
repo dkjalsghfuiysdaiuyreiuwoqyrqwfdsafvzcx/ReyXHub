@@ -32,7 +32,7 @@ export default function HubLayout({
 
         <HubNavbar />
 
-        <main className="mx-auto w-full max-w-7xl px-4">
+        <main className="mx-auto w-full max-w-7xl px-4 min-h-screen">
           {children}
         </main>
         <Footer />

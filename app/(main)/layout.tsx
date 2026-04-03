@@ -30,7 +30,7 @@ export default function MainLayout({
 
           <Navbar />
 
-          <main className="mx-auto w-full max-w-7xl px-4">
+          <main className="mx-auto w-full max-w-7xl px-4 h-full">
             {children}
           </main>
           <Footer />
