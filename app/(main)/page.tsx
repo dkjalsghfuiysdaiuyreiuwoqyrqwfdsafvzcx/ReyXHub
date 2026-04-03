@@ -1,8 +1,12 @@
 import FeatureCard from "@/components/card/FeatureCard";
 import PricingCard from "@/components/card/PricingCard";
+import { getSession, logoutEmail } from "@/lib/actions/auth-actions";
 import { ArrowDown } from "lucide-react";
+import { redirect } from "next/navigation";
 
-export default function Home() {
+export default async function Home() {
+
+
   return (
     <div className="py-10">
       <section id="home" className="mt-10 flex flex-col items-center text-center">
