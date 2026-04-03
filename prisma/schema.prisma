@@ -93,9 +93,11 @@ model PlayerAccount {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  items  Item[]
-  user   User?   @relation(fields: [userId], references: [id])
-  userId String?
+  items    Item[]
+  user     User?   @relation(fields: [userId], references: [id])
+  userId   String?
+  apiKey   ApiKey? @relation(fields: [apiKeyId], references: [id])
+  apiKeyId String?
 
   @@map("player_account")
 }
@@ -132,20 +134,21 @@ model Pet {
 }
 
 model ApiKey {
-  id           String   @id @default(cuid())
-  key          String   @unique
-  maxRequests  Int
-  requestsUsed Int      @default(0)
+  id             String          @id @default(cuid())
+  key            String          @unique
+  maxRequests    Int
+  requestsUsed   Int             @default(0)
+  playerAccounts PlayerAccount[]
 
-  isActive     Boolean  @default(true)
+  isActive Boolean @default(true)
 
-  createdAt    DateTime @default(now())
-  expiresAt    DateTime?
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
 
-  lastUsedAt   DateTime?
+  lastUsedAt DateTime?
 
-  userId       String?
-  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("api_key")
 }

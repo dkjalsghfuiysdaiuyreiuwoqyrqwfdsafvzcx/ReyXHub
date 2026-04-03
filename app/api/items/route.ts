@@ -8,16 +8,7 @@ export async function GET(){
 }
 
 export async function POST(req: Request) {
-  let body: {
-    account?: string;
-    device?: string;
-    potions?: number;
-    bucks?: number;
-    eventCurrency?: number;
-    tickets?: number;
-    lastSeen?: string;
-    upTime?: string;
-  } | null = null;
+  let body: any;
 
   try {
     body = await req.json();
@@ -46,6 +37,44 @@ export async function POST(req: Request) {
         tickets: body.tickets ?? 0,
         lastSeen: body.lastSeen ? new Date(body.lastSeen) : null,
         upTime: body.upTime ? new Date(body.upTime) : null,
+        ...(body.apiKey
+          ? {
+              apiKey: {
+                connect: {
+                  id: body.apiKey,
+                },
+              },
+            }
+          : {}),
+
+        // 🔥 CREATE ITEMS HERE
+        items: {
+          create: (body.items ?? []).map((item: any) => ({
+            type: item.type,
+            name: item.name,
+            quantity: item.quantity ?? 1,
+
+            // only if it's a pet
+            pet:
+              item.type === "PET"
+                ? {
+                    create: {
+                      variant: item.variant, // NORMAL / NEON / MEGA
+                      potion: item.potion,   // NONE / RIDE / FLY / FLY_RIDE
+                    },
+                  }
+                : undefined,
+          })),
+        },
+      },
+
+      // 🔥 include items in response
+      include: {
+        items: {
+          include: {
+            pet: true,
+          },
+        },
       },
     });
 
@@ -57,7 +86,10 @@ export async function POST(req: Request) {
     console.error("Create player account error:", error);
 
     return NextResponse.json(
-      { message: "Failed to save to database" },
+      {
+        message: "Failed to save to database",
+        error: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }
