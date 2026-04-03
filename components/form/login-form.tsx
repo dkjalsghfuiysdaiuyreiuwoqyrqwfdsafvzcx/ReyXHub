@@ -14,6 +14,8 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { loginEmail } from "@/lib/actions/auth-actions"
+import { logoutEmail } from "@/lib/actions/auth-actions"
 
 export function LoginForm({
   className,
@@ -29,7 +31,7 @@ export function LoginForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form>
+          <form action={logoutEmail}>
             <FieldGroup>
               <Field>
                 <FieldLabel htmlFor="email">Email</FieldLabel>

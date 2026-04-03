@@ -19,3 +19,22 @@ export async function registerEmail(formData: FormData) {
         headers: await headers()
     })
 }
+
+export async function loginEmail(formData: FormData) {
+    const email = formData.get("email") as string
+    const password = formData.get("password") as string
+    
+    await auth.api.signInEmail({
+        body: {
+            email,
+            password
+        },
+        headers: await headers()
+    })
+}
+
+export async function logoutEmail() {
+    await auth.api.signOut({
+        headers: await headers()
+    })
+}
