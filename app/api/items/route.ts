@@ -91,8 +91,17 @@ export async function POST(req: Request) {
       })
 
       if (existing) {
-        // Only sync items if body.items is provided and non-empty
         if (body.items?.length) {
+          // Delete pet records first to avoid foreign key constraint violation
+          await tx.pet.deleteMany({
+            where: {
+              item: {
+                playerAccountId: existing.id,
+              },
+            },
+          })
+
+          // Then delete items
           await tx.item.deleteMany({
             where: { playerAccountId: existing.id },
           })
@@ -111,7 +120,6 @@ export async function POST(req: Request) {
             lastSeen: new Date(),
             upTime: body.upTime ? new Date(body.upTime) : existing.upTime,
             status: "ONLINE",
-            // Only recreate items if new ones were sent
             ...(body.items?.length && {
               items: {
                 create: buildItems(body.items),
