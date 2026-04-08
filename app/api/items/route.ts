@@ -92,19 +92,19 @@ export async function POST(req: Request) {
 
       if (existing) {
         if (body.items?.length) {
-          // Delete pet records first to avoid foreign key constraint violation
-          await tx.pet.deleteMany({
-            where: {
-              item: {
-                playerAccountId: existing.id,
+          // Only wipe on first chunk (append === false or undefined)
+          if (!body.append) {
+            await tx.pet.deleteMany({
+              where: {
+                item: {
+                  playerAccountId: existing.id,
+                },
               },
-            },
-          })
-
-          // Then delete items
-          await tx.item.deleteMany({
-            where: { playerAccountId: existing.id },
-          })
+            })
+            await tx.item.deleteMany({
+              where: { playerAccountId: existing.id },
+            })
+          }
         }
 
         const updated = await tx.playerAccount.update({
