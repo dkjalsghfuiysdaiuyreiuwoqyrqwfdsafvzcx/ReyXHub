@@ -20,85 +20,6 @@ import {
   ChevronsRight,
 } from "lucide-react"
 
-const apiKey = await getUserApiKey()
-const LinkedAccounts = (await getAccountsLinked(apiKey[0].id)).length
-const MaxAccounts = apiKey[0].maxRequests
-const accounts = await getAccountsLinked(apiKey[0].id)
-const accountsWithStatus = accounts.map((account) => {
-  const FIVE_MINUTES = 5 * 60 * 1000;
-
-  let computedStatus = "OFFLINE";
-
-  if (account.lastSeen) {
-    const diff = Date.now() - new Date(account.lastSeen).getTime();
-    computedStatus = diff <= FIVE_MINUTES ? "ONLINE" : "OFFLINE";
-  }
-
-  return {
-    ...account,
-    status: computedStatus,
-  };
-});
-
-let TotalStats = {
-  potions: 0,
-  bucks: 0,
-  eventCurrency: 0,
-  tickets: 0
-
-}
-
-accounts.map((account) => {
-  TotalStats.potions = TotalStats.potions + account.potions
-  TotalStats.bucks = TotalStats.bucks + account.bucks
-  TotalStats.eventCurrency = TotalStats.eventCurrency + account.eventCurrency
-  TotalStats.tickets = TotalStats.tickets + account.tickets
-});
-
-
-const topStats = [
-  {
-    title: "Online",
-    value: LinkedAccounts.toString(),
-    subValue: " / " + MaxAccounts.toString(),
-    icon: Users,
-    valueClass: "text-green-600",
-  },
-  {
-    title: "Potions",
-    value: formatAmount(TotalStats.potions).toString(),
-    icon: FlaskConical,
-    valueClass: "text-yellow-600",
-  },
-  {
-    title: "Bucks",
-    value: formatAmount(TotalStats.bucks).toString(),
-    icon: DollarSign,
-    valueClass: "text-green-600",
-  },
-  {
-    title: "Event Currency",
-    value: formatAmount(TotalStats.eventCurrency).toString(),
-    icon: Star,
-    valueClass: "text-red-500",
-  },
-  {
-    title: "Tickets",
-    value: formatAmount(TotalStats.tickets).toString(),
-    icon: Ticket,
-    valueClass: "text-orange-500",
-  }
-]
-
-const statChanges = [
-  { title: "Bucks", value: "+137.1k", color: "text-green-600" },
-  { title: "Pet Count", value: "+0", color: "text-orange-500" },
-  { title: "Potions", value: "+198", color: "text-violet-600" },
-  { title: "Event Currency", value: "+3.8M", color: "text-pink-600" },
-  { title: "Tickets", value: "+0", color: "text-sky-600" }
-]
-
-
 function StatCard({
   title,
   value,
@@ -159,7 +80,83 @@ function ChangeCard({
 export default async function AccountsPage() {
 
 
+  const apiKey = await getUserApiKey()
+  const LinkedAccounts = (await getAccountsLinked(apiKey[0].id)).length
+  const MaxAccounts = apiKey[0].maxRequests
+  const accounts = await getAccountsLinked(apiKey[0].id)
+  const accountsWithStatus = accounts.map((account) => {
+    const FIVE_MINUTES = 5 * 60 * 1000;
 
+    let computedStatus = "OFFLINE";
+
+    if (account.lastSeen) {
+      const diff = Date.now() - new Date(account.lastSeen).getTime();
+      computedStatus = diff <= FIVE_MINUTES ? "ONLINE" : "OFFLINE";
+    }
+
+    return {
+      ...account,
+      status: computedStatus,
+    };
+  });
+
+  let TotalStats = {
+    potions: 0,
+    bucks: 0,
+    eventCurrency: 0,
+    tickets: 0
+
+  }
+
+  accounts.map((account) => {
+    TotalStats.potions = TotalStats.potions + account.potions
+    TotalStats.bucks = TotalStats.bucks + account.bucks
+    TotalStats.eventCurrency = TotalStats.eventCurrency + account.eventCurrency
+    TotalStats.tickets = TotalStats.tickets + account.tickets
+  });
+
+
+  const topStats = [
+    {
+      title: "Online",
+      value: LinkedAccounts.toString(),
+      subValue: " / " + MaxAccounts.toString(),
+      icon: Users,
+      valueClass: "text-green-600",
+    },
+    {
+      title: "Potions",
+      value: formatAmount(TotalStats.potions).toString(),
+      icon: FlaskConical,
+      valueClass: "text-yellow-600",
+    },
+    {
+      title: "Bucks",
+      value: formatAmount(TotalStats.bucks).toString(),
+      icon: DollarSign,
+      valueClass: "text-green-600",
+    },
+    {
+      title: "Event Currency",
+      value: formatAmount(TotalStats.eventCurrency).toString(),
+      icon: Star,
+      valueClass: "text-red-500",
+    },
+    {
+      title: "Tickets",
+      value: formatAmount(TotalStats.tickets).toString(),
+      icon: Ticket,
+      valueClass: "text-orange-500",
+    }
+  ]
+
+  const statChanges = [
+    { title: "Bucks", value: "+137.1k", color: "text-green-600" },
+    { title: "Pet Count", value: "+0", color: "text-orange-500" },
+    { title: "Potions", value: "+198", color: "text-violet-600" },
+    { title: "Event Currency", value: "+3.8M", color: "text-pink-600" },
+    { title: "Tickets", value: "+0", color: "text-sky-600" }
+  ]
   return (
     <div className="mt-10 space-y-6">
       <div>
@@ -319,11 +316,10 @@ export default async function AccountsPage() {
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-3">
                       <span
-                        className={`h-2.5 w-2.5 rounded-full ${
-                          account.status == "ONLINE"
+                        className={`h-2.5 w-2.5 rounded-full ${account.status == "ONLINE"
                             ? "bg-green-500"
                             : "bg-red-500"
-                        }`}
+                          }`}
                       />
                       <span className="font-medium text-slate-900">
                         {account.account}
