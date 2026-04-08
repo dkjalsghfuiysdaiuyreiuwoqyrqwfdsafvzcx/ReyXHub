@@ -1,6 +1,25 @@
 import { NextResponse } from "next/server"
 import prisma from "@/lib/prisma"
 
+function buildItems(items: any[]) {
+  return items.map((item: any) => ({
+    type: item.type,
+    name: item.name,
+    quantity: item.quantity ?? 1,
+    thumbnailImage: item.thumbnailImage ?? null,
+    pet:
+      item.type === "PET"
+        ? {
+            create: {
+              variant: item.variant,
+              potion: item.potion,
+              rarity: item.rarity,
+            },
+          }
+        : undefined,
+  }))
+}
+
 export async function GET() {
   return NextResponse.json({
     message: "SUCCESS!",
@@ -52,16 +71,12 @@ export async function POST(req: Request) {
       }
 
       let deviceRecord = await tx.accountDevice.findFirst({
-        where: {
-          name: body.device,
-        },
+        where: { name: body.device },
       })
 
       if (!deviceRecord) {
         deviceRecord = await tx.accountDevice.create({
-          data: {
-            name: body.device,
-          },
+          data: { name: body.device },
         })
       }
 
@@ -71,31 +86,24 @@ export async function POST(req: Request) {
           apiKeyId: apiKeyRecord.id,
         },
         include: {
-          items: {
-            include: { pet: true },
-          },
+          items: { include: { pet: true } },
         },
       })
 
       if (existing) {
-        await tx.item.deleteMany({
-          where: {
-            playerAccountId: existing.id,
-          },
-        })
+        // Only sync items if body.items is provided and non-empty
+        if (body.items?.length) {
+          await tx.item.deleteMany({
+            where: { playerAccountId: existing.id },
+          })
+        }
 
         const updated = await tx.playerAccount.update({
           where: { id: existing.id },
           data: {
-            user: {
-              connect: { id: apiKeyRecord.userId },
-            },
-            apiKey: {
-              connect: { id: apiKeyRecord.id },
-            },
-            device: {
-              connect: { id: deviceRecord.id },
-            },
+            user: { connect: { id: apiKeyRecord.userId } },
+            apiKey: { connect: { id: apiKeyRecord.id } },
+            device: { connect: { id: deviceRecord.id } },
             potions: body.potions ?? existing.potions,
             bucks: body.bucks ?? existing.bucks,
             eventCurrency: body.eventCurrency ?? existing.eventCurrency,
@@ -103,39 +111,23 @@ export async function POST(req: Request) {
             lastSeen: new Date(),
             upTime: body.upTime ? new Date(body.upTime) : existing.upTime,
             status: "ONLINE",
-            items: {
-              create: (body.items ?? []).map((item: any) => ({
-                type: item.type,
-                name: item.name,
-                quantity: item.quantity ?? 1,
-                thumbnailImage: item.thumbnailImage ?? null,
-                pet:
-                  item.type === "PET"
-                    ? {
-                      create: {
-                        variant: item.variant,
-                        potion: item.potion,
-                        rarity: item.rarity,
-                      },
-                    }
-                    : undefined,
-              })),
-            },
+            // Only recreate items if new ones were sent
+            ...(body.items?.length && {
+              items: {
+                create: buildItems(body.items),
+              },
+            }),
           },
           include: {
-            items: {
-              include: { pet: true },
-            },
+            items: { include: { pet: true } },
             device: true,
           },
         })
 
-        return {
-          type: "UPDATED",
-          data: updated,
-        }
+        return { type: "UPDATED", data: updated }
       }
 
+      // New account — check limit
       const currentAccounts = apiKeyRecord._count.playerAccounts
       const maxAllowed = apiKeyRecord.maxRequests
 
@@ -148,9 +140,7 @@ export async function POST(req: Request) {
       const created = await tx.playerAccount.create({
         data: {
           account: body.account,
-          device: {
-            connect: { id: deviceRecord.id },
-          },
+          device: { connect: { id: deviceRecord.id } },
           potions: body.potions ?? 0,
           bucks: body.bucks ?? 0,
           eventCurrency: body.eventCurrency ?? 0,
@@ -158,43 +148,19 @@ export async function POST(req: Request) {
           lastSeen: new Date(),
           status: "ONLINE",
           upTime: body.upTime ? new Date(body.upTime) : null,
-          apiKey: {
-            connect: { id: apiKeyRecord.id },
-          },
-          user: {
-            connect: { id: apiKeyRecord.userId },
-          },
+          apiKey: { connect: { id: apiKeyRecord.id } },
+          user: { connect: { id: apiKeyRecord.userId } },
           items: {
-            create: (body.items ?? []).map((item: any) => ({
-              type: item.type,
-              name: item.name,
-              quantity: item.quantity ?? 1,
-              thumbnailImage: item.thumbnailImage ?? null,
-              pet:
-                item.type === "PET"
-                  ? {
-                    create: {
-                      variant: item.variant,
-                      potion: item.potion,
-                      rarity: item.rarity,
-                    },
-                  }
-                  : undefined,
-            })),
+            create: buildItems(body.items ?? []),
           },
         },
         include: {
-          items: {
-            include: { pet: true },
-          },
+          items: { include: { pet: true } },
           device: true,
         },
       })
 
-      return {
-        type: "CREATED",
-        data: created,
-      }
+      return { type: "CREATED", data: created }
     })
 
     return NextResponse.json({
@@ -212,10 +178,7 @@ export async function POST(req: Request) {
       error instanceof Error ? error.message : "Unknown error"
 
     return NextResponse.json(
-      {
-        success: false,
-        message,
-      },
+      { success: false, message },
       { status: 400 }
     )
   }

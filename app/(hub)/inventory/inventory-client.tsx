@@ -30,6 +30,39 @@ function rarityFilterClass(rarity: string, active: boolean) {
     }
 }
 
+type InventoryPet = DeviceWithPets["pets"][number]
+
+function mergeAllPets(devices: DeviceWithPets[]): InventoryPet[] {
+    const petMap = new Map<string, InventoryPet & { _accountIds: Set<string> }>()
+
+    for (const device of devices) {
+        for (const pet of device.pets) {
+            const key = [pet.name, pet.pet?.variant ?? "NORMAL", pet.pet?.potion ?? "NONE"].join("|")
+
+            if (!petMap.has(key)) {
+                // Start quantity at 0 so we don't double-count on first insert
+                petMap.set(key, { ...pet, quantity: 0, _accountIds: new Set() })
+            }
+
+            const existing = petMap.get(key)!
+            existing.quantity += pet.quantity
+
+            for (let i = 0; i < pet.accountCount; i++) {
+                existing._accountIds.add(`${device.deviceId}_${i}`)
+            }
+
+            if (!existing.thumbnailImage && pet.thumbnailImage) {
+                existing.thumbnailImage = pet.thumbnailImage
+            }
+        }
+    }
+
+    return Array.from(petMap.values()).map(({ _accountIds, ...pet }) => ({
+        ...pet,
+        accountCount: _accountIds.size,
+    }))
+}
+
 export default function InventoryClient({ deviceInventory }: { deviceInventory: DeviceWithPets[] }) {
     const [search, setSearch] = useState("")
     const [selectedRarity, setSelectedRarity] = useState("ALL")
@@ -51,7 +84,9 @@ export default function InventoryClient({ deviceInventory }: { deviceInventory: 
         })).filter((device) => device.pets.length > 0)
     }, [deviceInventory, search, selectedRarity, selectedDevice])
 
-    const totalPets = filteredDevices.flatMap((d) => d.pets).reduce((sum, p) => sum + p.quantity, 0)
+    const allPets = useMemo(() => mergeAllPets(filteredDevices), [filteredDevices])
+
+    const totalPets = allPets.reduce((sum, p) => sum + p.quantity, 0)
 
     return (
         <div className="mt-10 space-y-6">
@@ -133,14 +168,14 @@ export default function InventoryClient({ deviceInventory }: { deviceInventory: 
             </div>
 
             {/* Results */}
-            {filteredDevices.length === 0 ? (
+            {allPets.length === 0 ? (
                 <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-400 shadow-sm">
                     No pets found matching your filters.
                 </div>
             ) : byDevice ? (
-                // Grouped by device
                 filteredDevices.map((device) => {
-                    const deviceTotal = device.pets.reduce((sum, p) => sum + p.quantity, 0)
+                    const devicePets = mergeAllPets([device])
+                    const deviceTotal = devicePets.reduce((sum, p) => sum + p.quantity, 0)
                     return (
                         <div key={device.deviceId} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                             <div className="mb-6 flex items-center justify-center gap-3 border-b border-slate-100 pb-4">
@@ -150,12 +185,11 @@ export default function InventoryClient({ deviceInventory }: { deviceInventory: 
                                     {deviceTotal} pets
                                 </span>
                             </div>
-                            <PetGrid pets={device.pets} />
+                            <PetGrid pets={devicePets} />
                         </div>
                     )
                 })
             ) : (
-                // All pets flat
                 <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <div className="mb-6 flex items-center justify-center gap-3 border-b border-slate-100 pb-4">
                         <h2 className="font-semibold text-slate-900">All Pets</h2>
@@ -163,7 +197,7 @@ export default function InventoryClient({ deviceInventory }: { deviceInventory: 
                             {totalPets} pets
                         </span>
                     </div>
-                    <PetGrid pets={filteredDevices.flatMap((d) => d.pets)} />
+                    <PetGrid pets={allPets} />
                 </div>
             )}
         </div>
@@ -172,10 +206,10 @@ export default function InventoryClient({ deviceInventory }: { deviceInventory: 
 
 function PetGrid({ pets }: { pets: DeviceWithPets["pets"] }) {
     return (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-5">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-7">
             {pets.map((item) => (
                 <div
-                    key={item.id}
+                    key={[item.name, item.pet?.variant, item.pet?.potion].join("|")}
                     className="group relative rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 >
                     <div className="absolute left-3 top-3 rounded-md bg-slate-900 px-2 py-1 text-xs font-bold text-white">
