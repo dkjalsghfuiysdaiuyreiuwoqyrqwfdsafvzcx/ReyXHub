@@ -1,5 +1,6 @@
 import { getAccountsLinked } from "@/lib/actions/accounts/accounts-actions"
 import { getUserApiKey } from "@/lib/actions/api-key"
+import { formatAmount } from "@/lib/format/format-stats"
 import { formatTimeAgo } from "@/lib/format/format-time-ago"
 import {
   Users,
@@ -19,45 +20,74 @@ import {
   ChevronsRight,
 } from "lucide-react"
 
+const apiKey = await getUserApiKey()
+const LinkedAccounts = (await getAccountsLinked(apiKey[0].id)).length
+const MaxAccounts = apiKey[0].maxRequests
+const accounts = await getAccountsLinked(apiKey[0].id)
+const accountsWithStatus = accounts.map((account) => {
+  const FIVE_MINUTES = 5 * 60 * 1000;
+
+  let computedStatus = "OFFLINE";
+
+  if (account.lastSeen) {
+    const diff = Date.now() - new Date(account.lastSeen).getTime();
+    computedStatus = diff <= FIVE_MINUTES ? "ONLINE" : "OFFLINE";
+  }
+
+  return {
+    ...account,
+    status: computedStatus,
+  };
+});
+
+let TotalStats = {
+  potions: 0,
+  bucks: 0,
+  eventCurrency: 0,
+  tickets: 0
+
+}
+
+accounts.map((account) => {
+  TotalStats.potions = TotalStats.potions + account.potions
+  TotalStats.bucks = TotalStats.bucks + account.bucks
+  TotalStats.eventCurrency = TotalStats.eventCurrency + account.eventCurrency
+  TotalStats.tickets = TotalStats.tickets + account.tickets
+});
+
 
 const topStats = [
   {
-    title: "Online / Total Accounts",
-    value: "161",
-    subValue: "/ 211",
+    title: "Online",
+    value: LinkedAccounts.toString(),
+    subValue: " / " + MaxAccounts.toString(),
     icon: Users,
     valueClass: "text-green-600",
   },
   {
     title: "Potions",
-    value: "35,259",
+    value: formatAmount(TotalStats.potions).toString(),
     icon: FlaskConical,
     valueClass: "text-yellow-600",
   },
   {
     title: "Bucks",
-    value: "37.53M",
+    value: formatAmount(TotalStats.bucks).toString(),
     icon: DollarSign,
     valueClass: "text-green-600",
   },
   {
     title: "Event Currency",
-    value: "652.67M",
+    value: formatAmount(TotalStats.eventCurrency).toString(),
     icon: Star,
     valueClass: "text-red-500",
   },
   {
     title: "Tickets",
-    value: "2,000",
+    value: formatAmount(TotalStats.tickets).toString(),
     icon: Ticket,
     valueClass: "text-orange-500",
-  },
-  {
-    title: "Crystal Eggs",
-    value: "0",
-    icon: Egg,
-    valueClass: "text-sky-500",
-  },
+  }
 ]
 
 const statChanges = [
@@ -65,8 +95,7 @@ const statChanges = [
   { title: "Pet Count", value: "+0", color: "text-orange-500" },
   { title: "Potions", value: "+198", color: "text-violet-600" },
   { title: "Event Currency", value: "+3.8M", color: "text-pink-600" },
-  { title: "Tickets", value: "+0", color: "text-sky-600" },
-  { title: "Crystal Eggs", value: "+0", color: "text-cyan-600" },
+  { title: "Tickets", value: "+0", color: "text-sky-600" }
 ]
 
 
@@ -129,23 +158,8 @@ function ChangeCard({
 
 export default async function AccountsPage() {
 
-  const apiKey = await getUserApiKey()
-  const accounts = await getAccountsLinked(apiKey[0].id)
-  const accountsWithStatus = accounts.map((account) => {
-    const FIVE_MINUTES = 5 * 60 * 1000;
 
-    let computedStatus = "OFFLINE";
 
-    if (account.lastSeen) {
-      const diff = Date.now() - new Date(account.lastSeen).getTime();
-      computedStatus = diff <= FIVE_MINUTES ? "ONLINE" : "OFFLINE";
-    }
-
-    return {
-      ...account,
-      status: computedStatus,
-    };
-  });
   return (
     <div className="mt-10 space-y-6">
       <div>
@@ -157,7 +171,7 @@ export default async function AccountsPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
         {topStats.map((item) => (
           <StatCard key={item.title} {...item} />
         ))}
@@ -182,7 +196,7 @@ export default async function AccountsPage() {
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
           {statChanges.map((item) => (
             <ChangeCard key={item.title} {...item} />
           ))}
@@ -317,7 +331,7 @@ export default async function AccountsPage() {
                     </div>
                   </td>
 
-                  <td className="px-4 py-4 text-slate-700">{account.device}</td>
+                  <td className="px-4 py-4 text-slate-700">{account.accountDeviceId}</td>
                   <td className="px-4 py-4 font-medium text-slate-900">
                     {account.potions}
                   </td>

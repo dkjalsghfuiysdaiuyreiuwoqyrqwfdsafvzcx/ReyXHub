@@ -85,10 +85,19 @@ enum PLAYERACCOUNT_STATUS {
   OFFLINE
 }
 
+model AccountDevice {
+  id             String          @id @default(cuid())
+  name           String
+  playerAccounts PlayerAccount[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model PlayerAccount {
   id            String               @id @default(cuid())
   account       String
-  device        String
+  device        AccountDevice        @relation(fields: [accountDeviceId], references: [id])
   potions       Int                  @default(0)
   bucks         Int                  @default(0)
   eventCurrency Int                  @default(0)
@@ -99,11 +108,12 @@ model PlayerAccount {
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
 
-  items    Item[]
-  user     User?   @relation(fields: [userId], references: [id])
-  userId   String?
-  apiKey   ApiKey? @relation(fields: [apiKeyId], references: [id])
-  apiKeyId String?
+  items           Item[]
+  user            User?   @relation(fields: [userId], references: [id])
+  userId          String?
+  apiKey          ApiKey? @relation(fields: [apiKeyId], references: [id])
+  apiKeyId        String?
+  accountDeviceId String
 
   @@map("player_account")
 }
@@ -113,9 +123,10 @@ model Item {
   playerAccountId String
   playerAccount   PlayerAccount @relation(fields: [playerAccountId], references: [id], onDelete: Cascade)
 
-  type     ItemType
-  name     String
-  quantity Int      @default(1)
+  type           ItemType
+  name           String
+  quantity       Int      @default(1)
+  thumbnailImage String?
 
   pet Pet?
 
@@ -125,10 +136,20 @@ model Item {
   @@map("item")
 }
 
+enum PETRARITY {
+  LEGENDARY
+  ULTRA_RARE
+  RARE
+  UNCOMMON
+  COMMON
+}
+
 model Pet {
-  id     String @id @default(cuid())
-  itemId String @unique
-  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  id     String    @id @default(cuid())
+  itemId String    @unique
+  item   Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  rarity PETRARITY
+  age    Int       @default(1)
 
   variant PetVariant
   potion  PetPotion

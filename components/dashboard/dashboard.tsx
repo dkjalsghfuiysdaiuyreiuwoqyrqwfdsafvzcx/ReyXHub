@@ -6,6 +6,7 @@ import { getUserApiKey, generateApiKey } from "@/lib/actions/api-key"
 import { revalidatePath } from "next/cache"
 import { validateUserApiKey } from "@/lib/server/api-key"
 import ApiKeyCard from "./ApiKeyCard"
+import { getAccountsLinked } from "@/lib/actions/accounts/accounts-actions"
 
 export default async function Dashboard() {
   const session = await getSession()
@@ -50,6 +51,9 @@ export default async function Dashboard() {
     remainingHours = Math.floor(remainingMs / (1000 * 60 * 60))
     remainingMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60))
   }
+
+  const MaxAccounts = apiKey[0]?.maxRequests ?? 0
+  const LinkedAccounts = (await getAccountsLinked(apiKey[0]?.id)).length ?? 0
 
   return (
     <div className="mt-10 bg-[#ffffff]/80 p-4 border border-slate-200 rounded-2xl shadow grid grid-cols-2">
@@ -101,8 +105,8 @@ export default async function Dashboard() {
         <div className="col-span-2 md:col-span-1">
           <StatCard
             title="Accounts"
-            firstNum={999}
-            secondNum={999}
+            firstNum={LinkedAccounts}
+            secondNum={MaxAccounts}
             buttonName="Add Accounts"
           />
         </div>
