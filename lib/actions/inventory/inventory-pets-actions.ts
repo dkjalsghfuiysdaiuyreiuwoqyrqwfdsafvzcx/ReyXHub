@@ -28,11 +28,7 @@ export async function getInventoryByDevice(): Promise<DeviceWithPets[]> {
 
     const devices = await prisma.accountDevice.findMany({
         where: {
-            playerAccounts: {
-                some: {
-                    userId: session.user.id,
-                },
-            },
+            userId: session.user.id,  // ← direct ownership check
         },
         include: {
             playerAccounts: {

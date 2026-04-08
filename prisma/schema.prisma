@@ -30,6 +30,7 @@ model User {
   sessions       Session[]
   accounts       Account[]
   playerAccounts PlayerAccount[]
+  accountDevice  AccountDevice[]
 
   @@unique([email])
   @@map("user")
@@ -89,6 +90,9 @@ model AccountDevice {
   id             String          @id @default(cuid())
   name           String
   playerAccounts PlayerAccount[]
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

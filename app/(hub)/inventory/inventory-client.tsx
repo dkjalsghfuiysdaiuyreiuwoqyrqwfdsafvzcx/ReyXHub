@@ -206,7 +206,7 @@ export default function InventoryClient({ deviceInventory }: { deviceInventory: 
 
 function PetGrid({ pets }: { pets: DeviceWithPets["pets"] }) {
     return (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-7">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
             {pets.map((item) => (
                 <div
                     key={[item.name, item.pet?.variant, item.pet?.potion].join("|")}
