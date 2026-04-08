@@ -1,6 +1,7 @@
 import prisma from "@/lib/prisma"
 import { getSession } from "../auth-actions"
 import { PetPotion, PETRARITY, PetVariant } from "@/app/generated/prisma/enums"
+import { unstable_noStore as noStore } from "next/cache"
 
 type InventoryPet = {
     id: string
@@ -15,84 +16,94 @@ type InventoryPet = {
     } | null
 }
 
-export async function getInventoryPets(): Promise<InventoryPet[]> {
+export type DeviceWithPets = {
+    deviceId: string
+    deviceName: string
+    pets: InventoryPet[]
+}
+
+export async function getInventoryByDevice(): Promise<DeviceWithPets[]> {
+    noStore()
     const session = await getSession()
 
-    if (!session?.user?.id) {
-        return []
-    }
+    if (!session?.user?.id) return []
 
-    const inventoryPets = await prisma.item.findMany({
+    const devices = await prisma.accountDevice.findMany({
         where: {
-            type: "PET",
-            playerAccount: {
-                userId: session.user.id,
+            playerAccounts: {
+                some: {
+                    userId: session.user.id,
+                },
             },
         },
         include: {
-            pet: true,
-            playerAccount: {
-                select: {
-                    id: true,
+            playerAccounts: {
+                where: {
+                    userId: session.user.id,
+                },
+                include: {
+                    items: {
+                        where: { type: "PET" },
+                        include: { pet: true },
+                    },
                 },
             },
         },
     })
 
-    const petMap = new Map<
-        string,
-        {
+    return devices.map((device) => {
+        const petMap = new Map<String, {
             id: string
             name: string
             quantity: number
             thumbnailImage: string | null
-            pet: {
-                variant: PetVariant
-                potion: PetPotion
-                rarity: PETRARITY
-            } | null
+            pet: { variant: PetVariant; potion: PetPotion; rarity: PETRARITY } | null
             accountIds: Set<string>
+        }>()
+
+        for (const account of device.playerAccounts) {
+            for (const item of account.items) {
+                const key = [
+                    item.name,
+                    item.pet?.variant ?? "NORMAL",
+                    item.pet?.potion ?? "NONE",
+                ].join("|")
+
+                if (!petMap.has(key)) {
+                    petMap.set(key, {
+                        id: item.id,
+                        name: item.name,
+                        quantity: 0,
+                        thumbnailImage: item.thumbnailImage ?? null,
+                        pet: item.pet ? {
+                            variant: item.pet.variant,
+                            potion: item.pet.potion,
+                            rarity: item.pet.rarity,
+                        } : null,
+                        accountIds: new Set(),
+                    })
+                }
+
+                const existing = petMap.get(key)!
+                existing.quantity += item.quantity
+                existing.accountIds.add(account.id)
+                if (!existing.thumbnailImage && item.thumbnailImage) {
+                    existing.thumbnailImage = item.thumbnailImage
+                }
+            }
         }
-    >()
 
-    for (const item of inventoryPets) {
-        const key = [
-            item.name,
-            item.pet?.variant ?? "NORMAL",
-            item.pet?.potion ?? "NONE",
-        ].join("|")
-
-        if (!petMap.has(key)) {
-            petMap.set(key, {
-                id: item.id,
-                name: item.name,
-                quantity: 0,
-                thumbnailImage: item.thumbnailImage ?? null,
-                pet: item.pet
-                    ? {
-                        variant: item.pet.variant,
-                        potion: item.pet.potion,
-                        rarity: item.pet.rarity
-                    }
-                    : null,
-                accountIds: new Set(),
-            })
+        return {
+            deviceId: device.id,
+            deviceName: device.name,
+            pets: Array.from(petMap.values()).map((pet) => ({
+                id: pet.id,
+                name: pet.name,
+                quantity: pet.quantity,
+                thumbnailImage: pet.thumbnailImage,
+                pet: pet.pet,
+                accountCount: pet.accountIds.size,
+            })),
         }
-
-        const existing = petMap.get(key)!
-        existing.quantity += item.quantity
-        existing.accountIds.add(item.playerAccount.id)
-        if (!existing.thumbnailImage && item.thumbnailImage) {
-            existing.thumbnailImage = item.thumbnailImage
-        }
-    }
-
-    return Array.from(petMap.values()).map((pet) => ({
-        id: pet.id,
-        name: pet.name,
-        quantity: pet.quantity,
-        thumbnailImage: pet.thumbnailImage,
-        pet: pet.pet,
-        accountCount: pet.accountIds.size,
-    }))
+    })
 }
