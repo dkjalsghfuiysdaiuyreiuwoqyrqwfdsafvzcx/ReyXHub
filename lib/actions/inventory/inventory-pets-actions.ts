@@ -1,7 +1,6 @@
 import prisma from "@/lib/prisma"
 import { getSession } from "../auth-actions"
 import { PetPotion, PETRARITY, PetVariant } from "@/app/generated/prisma/enums"
-import { unstable_noStore as noStore } from "next/cache"
 
 type InventoryPet = {
     id: string
@@ -23,7 +22,6 @@ export type DeviceWithPets = {
 }
 
 export async function getInventoryByDevice(): Promise<DeviceWithPets[]> {
-    noStore()
     const session = await getSession()
 
     if (!session?.user?.id) return []
