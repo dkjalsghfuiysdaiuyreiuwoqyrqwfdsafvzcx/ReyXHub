@@ -2,12 +2,18 @@ import prisma from "@/lib/prisma"
 import { getSession } from "../auth-actions"
 import { PetPotion, PETRARITY, PetVariant } from "@/app/generated/prisma/enums"
 
+type PetAccount = {
+    id: string
+    name: string
+}
+
 type InventoryPet = {
     id: string
     name: string
     quantity: number
     thumbnailImage: string | null
     accountCount: number
+    accounts: PetAccount[]
     pet: {
         variant: PetVariant
         potion: PetPotion
@@ -23,18 +29,13 @@ export type DeviceWithPets = {
 
 export async function getInventoryByDevice(): Promise<DeviceWithPets[]> {
     const session = await getSession()
-
     if (!session?.user?.id) return []
 
     const devices = await prisma.accountDevice.findMany({
-        where: {
-            userId: session.user.id,  // ← direct ownership check
-        },
+        where: { userId: session.user.id },
         include: {
             playerAccounts: {
-                where: {
-                    userId: session.user.id,
-                },
+                where: { userId: session.user.id },
                 include: {
                     items: {
                         where: { type: "PET" },
@@ -46,13 +47,13 @@ export async function getInventoryByDevice(): Promise<DeviceWithPets[]> {
     })
 
     return devices.map((device) => {
-        const petMap = new Map<String, {
+        const petMap = new Map<string, {
             id: string
             name: string
             quantity: number
             thumbnailImage: string | null
             pet: { variant: PetVariant; potion: PetPotion; rarity: PETRARITY } | null
-            accountIds: Set<string>
+            accountMap: Map<string, PetAccount>
         }>()
 
         for (const account of device.playerAccounts) {
@@ -69,18 +70,19 @@ export async function getInventoryByDevice(): Promise<DeviceWithPets[]> {
                         name: item.name,
                         quantity: 0,
                         thumbnailImage: item.thumbnailImage ?? null,
-                        pet: item.pet ? {
-                            variant: item.pet.variant,
-                            potion: item.pet.potion,
-                            rarity: item.pet.rarity,
-                        } : null,
-                        accountIds: new Set(),
+                        pet: item.pet
+                            ? { variant: item.pet.variant, potion: item.pet.potion, rarity: item.pet.rarity }
+                            : null,
+                        accountMap: new Map(),
                     })
                 }
 
                 const existing = petMap.get(key)!
                 existing.quantity += item.quantity
-                existing.accountIds.add(account.id)
+                existing.accountMap.set(account.id, {
+                    id: account.id,
+                    name: account.account,  // ← PlayerAccount.account field
+                })
                 if (!existing.thumbnailImage && item.thumbnailImage) {
                     existing.thumbnailImage = item.thumbnailImage
                 }
@@ -96,7 +98,8 @@ export async function getInventoryByDevice(): Promise<DeviceWithPets[]> {
                 quantity: pet.quantity,
                 thumbnailImage: pet.thumbnailImage,
                 pet: pet.pet,
-                accountCount: pet.accountIds.size,
+                accounts: Array.from(pet.accountMap.values()),
+                accountCount: pet.accountMap.size,
             })),
         }
     })

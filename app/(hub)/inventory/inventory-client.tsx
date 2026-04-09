@@ -1,8 +1,15 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Search, Monitor, PawPrint, Star } from "lucide-react"
+import { Search, Monitor, PawPrint, Star, X, User } from "lucide-react"
 import type { DeviceWithPets } from "@/lib/actions/inventory/inventory-pets-actions"
+
+// ── types ────────────────────────────────────────────────────────────────────
+
+type PetAccount = { id: string; name: string }
+type InventoryPet = DeviceWithPets["pets"][number]
+
+// ── helpers (unchanged) ──────────────────────────────────────────────────────
 
 const RARITIES = ["ALL", "LEGENDARY", "ULTRA_RARE", "RARE", "UNCOMMON", "COMMON"]
 
@@ -30,25 +37,22 @@ function rarityFilterClass(rarity: string, active: boolean) {
     }
 }
 
-type InventoryPet = DeviceWithPets["pets"][number]
-
 function mergeAllPets(devices: DeviceWithPets[]): InventoryPet[] {
-    const petMap = new Map<string, InventoryPet & { _accountIds: Set<string> }>()
+    const petMap = new Map<string, InventoryPet & { _accountMap: Map<string, PetAccount> }>()
 
     for (const device of devices) {
         for (const pet of device.pets) {
             const key = [pet.name, pet.pet?.variant ?? "NORMAL", pet.pet?.potion ?? "NONE"].join("|")
 
             if (!petMap.has(key)) {
-                // Start quantity at 0 so we don't double-count on first insert
-                petMap.set(key, { ...pet, quantity: 0, _accountIds: new Set() })
+                petMap.set(key, { ...pet, quantity: 0, accounts: [], accountCount: 0, _accountMap: new Map() })
             }
 
             const existing = petMap.get(key)!
             existing.quantity += pet.quantity
 
-            for (let i = 0; i < pet.accountCount; i++) {
-                existing._accountIds.add(`${device.deviceId}_${i}`)
+            for (const acc of pet.accounts) {
+                existing._accountMap.set(acc.id, acc)
             }
 
             if (!existing.thumbnailImage && pet.thumbnailImage) {
@@ -57,11 +61,154 @@ function mergeAllPets(devices: DeviceWithPets[]): InventoryPet[] {
         }
     }
 
-    return Array.from(petMap.values()).map(({ _accountIds, ...pet }) => ({
+    return Array.from(petMap.values()).map(({ _accountMap, ...pet }) => ({
         ...pet,
-        accountCount: _accountIds.size,
+        accounts: Array.from(_accountMap.values()),
+        accountCount: _accountMap.size,
     }))
 }
+
+// ── AccountsModal ─────────────────────────────────────────────────────────────
+
+function AccountsModal({
+    petName,
+    accounts,
+    onClose,
+}: {
+    petName: string
+    accounts: PetAccount[]
+    onClose: () => void
+}) {
+    return (
+        // Backdrop
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+            onClick={onClose}
+        >
+            {/* Panel — stop clicks propagating to backdrop */}
+            <div
+                className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-6 shadow-xl"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Header */}
+                <div className="mb-4 flex items-start justify-between gap-3">
+                    <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Owned by</p>
+                        <h2 className="text-lg font-semibold text-slate-900">{petName}</h2>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="rounded-lg border border-slate-200 p-1.5 text-slate-400 transition hover:border-slate-300 hover:text-slate-700"
+                    >
+                        <X size={16} />
+                    </button>
+                </div>
+
+                {/* Account list */}
+                <ul className="space-y-2">
+                    {accounts.map((acc) => (
+                        <li
+                            key={acc.id}
+                            className="flex items-center gap-3 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
+                        >
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sky-700">
+                                <User size={14} />
+                            </div>
+                            <span className="text-sm font-medium text-slate-800">{acc.name}</span>
+                        </li>
+                    ))}
+                </ul>
+
+                {/* Footer count */}
+                <p className="mt-4 text-center text-xs text-slate-400">
+                    {accounts.length} account{accounts.length !== 1 ? "s" : ""}
+                </p>
+            </div>
+        </div>
+    )
+}
+
+// ── PetGrid ───────────────────────────────────────────────────────────────────
+
+function PetGrid({ pets }: { pets: InventoryPet[] }) {
+    const [modalPet, setModalPet] = useState<InventoryPet | null>(null)
+
+    return (
+        <>
+            {modalPet && (
+                <AccountsModal
+                    petName={modalPet.name}
+                    accounts={modalPet.accounts}
+                    onClose={() => setModalPet(null)}
+                />
+            )}
+
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                {pets.map((item) => (
+                    <div
+                        key={[item.name, item.pet?.variant, item.pet?.potion].join("|")}
+                        className="group relative rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                    >
+                        <div className="absolute left-3 top-3 rounded-md bg-slate-900 px-2 py-1 text-xs font-bold text-white">
+                            {item.quantity}x
+                        </div>
+
+                        <div className="flex justify-center pt-8">
+                            <img
+                                src={item.thumbnailImage ?? "/placeholder.png"}
+                                alt={item.name}
+                                className="h-28 w-28 object-contain"
+                            />
+                        </div>
+
+                        <div className="mt-4 text-center">
+                            <h3 className="line-clamp-2 min-h-12 text-base font-semibold text-slate-900">
+                                {item.name}
+                            </h3>
+                            <p className={`mt-1 text-xs font-bold uppercase tracking-wide ${rarityClass(item.pet?.rarity ?? "COMMON")}`}>
+                                {item.pet?.rarity}
+                            </p>
+                        </div>
+
+                        <div className="mt-4 flex items-center justify-between">
+                            <button className="rounded-lg border border-slate-200 p-2 text-slate-500 transition hover:border-slate-300 hover:text-slate-800">
+                                <Star size={15} />
+                            </button>
+                            <div className="flex items-center gap-2">
+                                {item.pet?.variant === "NEON" && (
+                                    <span className="rounded-full border border-lime-200 bg-lime-50 px-2 py-1 text-[10px] font-bold text-lime-700">
+                                        Neon
+                                    </span>
+                                )}
+                                {item.pet?.variant === "MEGA" && (
+                                    <span className="rounded-full border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-bold text-violet-700">
+                                        Mega
+                                    </span>
+                                )}
+                                {item.pet?.potion !== "NONE" && (
+                                    <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-bold text-sky-700">
+                                        {item.pet?.potion === "FLY_RIDE" ? "Fly Ride" : item.pet?.potion === "RIDE" ? "Ride" : "Fly"}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Accounts button — now clickable */}
+                        <button
+                            onClick={() => setModalPet(item)}
+                            className="mt-4 flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-600 transition hover:border-slate-300 hover:bg-slate-100"
+                        >
+                            <PawPrint size={13} />
+                            <span>{item.accountCount} account{item.accountCount !== 1 ? "s" : ""}</span>
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </>
+    )
+}
+
+// ── InventoryClient (unchanged logic, updated mergeAllPets call) ──────────────
 
 export default function InventoryClient({ deviceInventory }: { deviceInventory: DeviceWithPets[] }) {
     const [search, setSearch] = useState("")
@@ -85,7 +232,6 @@ export default function InventoryClient({ deviceInventory }: { deviceInventory: 
     }, [deviceInventory, search, selectedRarity, selectedDevice])
 
     const allPets = useMemo(() => mergeAllPets(filteredDevices), [filteredDevices])
-
     const totalPets = allPets.reduce((sum, p) => sum + p.quantity, 0)
 
     return (
@@ -95,7 +241,6 @@ export default function InventoryClient({ deviceInventory }: { deviceInventory: 
                 <p className="mt-1 text-slate-600">All pets across your accounts</p>
             </div>
 
-            {/* Search & Filter Bar */}
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm space-y-4">
                 <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
                     <div className="relative w-full xl:max-w-xl">
@@ -123,7 +268,6 @@ export default function InventoryClient({ deviceInventory }: { deviceInventory: 
                     </div>
                 </div>
 
-                {/* Rarity Filter */}
                 <div className="flex flex-wrap gap-2">
                     {RARITIES.map((rarity) => (
                         <button
@@ -136,7 +280,6 @@ export default function InventoryClient({ deviceInventory }: { deviceInventory: 
                     ))}
                 </div>
 
-                {/* Device Filter (shown when By Device is on) */}
                 {byDevice && (
                     <div className="flex flex-wrap gap-2">
                         <button
@@ -167,7 +310,6 @@ export default function InventoryClient({ deviceInventory }: { deviceInventory: 
                 )}
             </div>
 
-            {/* Results */}
             {allPets.length === 0 ? (
                 <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center text-slate-400 shadow-sm">
                     No pets found matching your filters.
@@ -200,68 +342,6 @@ export default function InventoryClient({ deviceInventory }: { deviceInventory: 
                     <PetGrid pets={allPets} />
                 </div>
             )}
-        </div>
-    )
-}
-
-function PetGrid({ pets }: { pets: DeviceWithPets["pets"] }) {
-    return (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {pets.map((item) => (
-                <div
-                    key={[item.name, item.pet?.variant, item.pet?.potion].join("|")}
-                    className="group relative rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                >
-                    <div className="absolute left-3 top-3 rounded-md bg-slate-900 px-2 py-1 text-xs font-bold text-white">
-                        {item.quantity}x
-                    </div>
-
-                    <div className="flex justify-center pt-8">
-                        <img
-                            src={item.thumbnailImage ?? "/placeholder.png"}
-                            alt={item.name}
-                            className="h-28 w-28 object-contain"
-                        />
-                    </div>
-
-                    <div className="mt-4 text-center">
-                        <h3 className="line-clamp-2 min-h-12 text-base font-semibold text-slate-900">
-                            {item.name}
-                        </h3>
-                        <p className={`mt-1 text-xs font-bold uppercase tracking-wide ${rarityClass(item.pet?.rarity ?? "COMMON")}`}>
-                            {item.pet?.rarity}
-                        </p>
-                    </div>
-
-                    <div className="mt-4 flex items-center justify-between">
-                        <button className="rounded-lg border border-slate-200 p-2 text-slate-500 transition hover:border-slate-300 hover:text-slate-800">
-                            <Star size={15} />
-                        </button>
-                        <div className="flex items-center gap-2">
-                            {item.pet?.variant === "NEON" && (
-                                <span className="rounded-full border border-lime-200 bg-lime-50 px-2 py-1 text-[10px] font-bold text-lime-700">
-                                    Neon
-                                </span>
-                            )}
-                            {item.pet?.variant === "MEGA" && (
-                                <span className="rounded-full border border-violet-200 bg-violet-50 px-2 py-1 text-[10px] font-bold text-violet-700">
-                                    Mega
-                                </span>
-                            )}
-                            {item.pet?.potion !== "NONE" && (
-                                <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-bold text-sky-700">
-                                    {item.pet?.potion === "FLY_RIDE" ? "Fly Ride" : item.pet?.potion === "RIDE" ? "Ride" : "Fly"}
-                                </span>
-                            )}
-                        </div>
-                    </div>
-
-                    <div className="mt-4 flex items-center justify-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs text-slate-600">
-                        <PawPrint size={13} />
-                        <span>{item.accountCount} account{item.accountCount > 1 ? "s" : ""}</span>
-                    </div>
-                </div>
-            ))}
         </div>
     )
 }
