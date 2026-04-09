@@ -70,21 +70,20 @@ export async function POST(req: Request) {
         throw new Error("API key has expired")
       }
 
-      let deviceRecord = await tx.accountDevice.findFirst({
+      const deviceRecord = await tx.accountDevice.upsert({
         where: {
-          name: body.device,
-          userId: apiKeyRecord.userId, // ← scope to this user
-        },
-      })
-
-      if (!deviceRecord) {
-        deviceRecord = await tx.accountDevice.create({
-          data: {
+          name_userId: {  // the auto-generated name for @@unique([name, userId])
             name: body.device,
             userId: apiKeyRecord.userId,
           },
-        })
-      }
+        },
+        update: {},  // nothing to update, just return existing
+        create: {
+          name: body.device,
+          userId: apiKeyRecord.userId,
+        },
+      })
+
 
       const existing = await tx.playerAccount.findFirst({
         where: {
