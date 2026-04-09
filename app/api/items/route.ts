@@ -10,12 +10,12 @@ function buildItems(items: any[]) {
     pet:
       item.type === "PET"
         ? {
-            create: {
-              variant: item.variant,
-              potion: item.potion,
-              rarity: item.rarity,
-            },
-          }
+          create: {
+            variant: item.variant,
+            potion: item.potion,
+            rarity: item.rarity,
+          },
+        }
         : undefined,
   }))
 }
@@ -71,12 +71,18 @@ export async function POST(req: Request) {
       }
 
       let deviceRecord = await tx.accountDevice.findFirst({
-        where: { name: body.device },
+        where: {
+          name: body.device,
+          userId: apiKeyRecord.userId, // ← scope to this user
+        },
       })
 
       if (!deviceRecord) {
         deviceRecord = await tx.accountDevice.create({
-          data: { name: body.device },
+          data: {
+            name: body.device,
+            userId: apiKeyRecord.userId,
+          },
         })
       }
 
